@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RoboRescue — Smarter Machines. Safer Missions.</title>
+<meta name="description" content="RoboRescue is an educational planning prototype showing how robotics can support human emergency responders. Simulated data only.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b1220'/%3E%3Cpath d='M16 6l9 5v10l-9 5-9-5V11z' fill='none' stroke='%23ff7a1a' stroke-width='3'/%3E%3C/svg%3E">
+<style>
+/* ===== 1. Tokens ===== */
+:root{--bg:#0b1220;--bg2:#101a2e;--panel:#141f36;--line:#25324d;--text:#f2f5fa;--muted:#a3b0c7;--or:#ff7a1a;--or2:#ffa05c;--cy:#4fd1e8;--ok:#5fd18a;--warn:#f5c04a;--bad:#ff6b6b;--r:8px;--font:"Bahnschrift","Segoe UI","Helvetica Neue",Arial,sans-serif}
+*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:76px}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.6 var(--font);overflow-x:hidden;background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);background-size:56px 56px;background-attachment:fixed;background-blend-mode:soft-light}
+body::before{content:"";position:fixed;inset:0;background:var(--bg);opacity:.93;z-index:-1}
+h1,h2,h3{line-height:1.15;margin:0 0 .5em;letter-spacing:-.01em}h1{font-size:clamp(2rem,5vw,3.4rem);font-weight:700}h2{font-size:clamp(1.5rem,3vw,2rem)}h3{font-size:1.1rem}
+p{margin:0 0 .8em}a{color:var(--cy)}.muted{color:var(--muted)}
+:focus-visible{outline:3px solid var(--cy);outline-offset:2px}
+.wrap{max-width:1180px;margin:0 auto;padding:0 20px}section{padding:56px 0;border-top:1px solid var(--line)}
+.skip{position:absolute;left:-999px}.skip:focus{left:10px;top:10px;background:var(--or);color:#000;padding:8px 12px;z-index:99}
+/* ===== 2. Components ===== */
+header{position:sticky;top:0;z-index:20;background:rgba(11,18,32,.96);border-bottom:1px solid var(--line)}
+.bar{display:flex;align-items:center;justify-content:space-between;min-height:64px;gap:12px}
+.brand{display:flex;gap:10px;align-items:center;font-weight:700;font-size:1.15rem;color:var(--text);text-decoration:none}
+nav ul{display:flex;gap:2px;list-style:none;margin:0;padding:0}nav a{display:block;padding:10px 11px;color:var(--muted);text-decoration:none;border-radius:var(--r);font-size:.93rem}nav a:hover,nav a.on{color:var(--text);background:var(--panel)}nav a.on{box-shadow:inset 0 -2px var(--or)}
+#menuBtn{display:none}
+.btn{min-height:44px;padding:10px 18px;border-radius:var(--r);border:1px solid var(--line);background:var(--panel);color:var(--text);font:600 .95rem var(--font);cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:8px;transition:background .15s,border-color .15s}
+.btn:hover{border-color:var(--cy)}.btn.pri{background:var(--or);color:#140a00;border-color:var(--or)}.btn.pri:hover{background:var(--or2)}.btn.dng{border-color:var(--bad);color:var(--bad)}.btn.sm{min-height:44px;padding:6px 12px;font-size:.88rem}.btn:disabled{opacity:.45;cursor:not-allowed}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:20px}
+.grid{display:grid;gap:16px}.g2{grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr))}.g3{grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr))}
+.tag{display:inline-block;font-size:.78rem;padding:2px 9px;border-radius:5px;border:1px solid var(--line);color:var(--cy);background:var(--bg2)}.tag.sim{color:var(--or2);border-color:var(--or)}
+.stat{font-size:2.3rem;font-weight:700;color:var(--or);line-height:1}.stat+div{color:var(--muted);font-size:.9rem;margin-top:6px}
+.hero{display:grid;grid-template-columns:1.25fr 1fr;gap:32px;align-items:center;padding:48px 0 40px}.hero .cta{display:flex;gap:12px;flex-wrap:wrap;margin-top:20px}
+.note{border-left:3px solid var(--warn);background:var(--bg2);padding:10px 14px;border-radius:0 var(--r) var(--r) 0;color:var(--muted);font-size:.92rem}
+.meter{height:10px;background:var(--bg2);border:1px solid var(--line);border-radius:6px;overflow:hidden}.meter i{display:block;height:100%;background:linear-gradient(90deg,var(--or),var(--cy));width:0;transition:width .5s}
+ul.clean{margin:0;padding-left:1.1em}ul.clean li{margin:3px 0}.log{list-style:none;padding:0;margin:0;max-height:230px;overflow:auto;font-size:.92rem}.log li{padding:6px 0;border-bottom:1px solid var(--line)}.log time{color:var(--cy);margin-right:8px;font-variant-numeric:tabular-nums}
+.robot svg{width:100%;height:120px;background:var(--bg2);border-radius:var(--r);margin-bottom:12px}.robot.sel{border-color:var(--or);box-shadow:0 0 0 1px var(--or)}.robot h4{margin:12px 0 4px;color:var(--cy);font-size:.95rem}.robot ul{font-size:.92rem}
+/* forms */
+form .row{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:14px;margin-bottom:14px}label{display:block;font-weight:600;font-size:.92rem;margin-bottom:4px}
+select,input,textarea{width:100%;min-height:44px;padding:10px 12px;background:var(--bg2);color:var(--text);border:1px solid var(--line);border-radius:var(--r);font:inherit}select option{background:var(--bg2)}
+[aria-invalid=true]{border-color:var(--bad)}.err{color:var(--bad);font-size:.85rem;min-height:1.2em;margin-top:3px}
+.actions{display:flex;gap:10px;flex-wrap:wrap}
+.mrow{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;padding:12px 0;border-bottom:1px solid var(--line)}
+#toast{position:fixed;right:16px;bottom:16px;max-width:min(92vw,380px);z-index:50;display:grid;gap:8px}.toast{padding:12px 14px;border-radius:var(--r);background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--cy)}.toast.success{border-left-color:var(--ok)}.toast.warn{border-left-color:var(--warn)}.toast.error{border-left-color:var(--bad)}
+dialog{background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:var(--r);max-width:min(92vw,420px)}dialog::backdrop{background:rgba(0,0,0,.65)}
+footer{border-top:1px solid var(--line);padding:28px 0;color:var(--muted);font-size:.9rem}
+@media(max-width:960px){.hero{grid-template-columns:1fr}#menuBtn{display:inline-flex}nav{display:none;position:absolute;top:64px;left:0;right:0;background:var(--bg);border-bottom:1px solid var(--line);padding:8px 20px}nav.open{display:block}nav ul{flex-direction:column}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important;scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header><div class="wrap bar">
+ <a class="brand" href="#overview" aria-label="RoboRescue home"><svg width="30" height="30" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="7" fill="#141f36" stroke="#25324d"/><path d="M16 6l9 5v10l-9 5-9-5V11z" fill="none" stroke="#ff7a1a" stroke-width="3"/><circle cx="16" cy="16" r="3" fill="#4fd1e8"/></svg>RoboRescue</a>
+ <button class="btn" id="menuBtn" aria-expanded="false" aria-controls="nav">Menu</button>
+ <nav id="nav" aria-label="Main"><ul>
+  <li><a href="#overview">Overview</a></li><li><a href="#robots">Robots</a></li><li><a href="#planner">Planner</a></li><li><a href="#simulation">Simulation</a></li><li><a href="#safety">Safety</a></li><li><a href="#learn">Learn</a></li><li><a href="#about">About</a></li></ul></nav>
+</div></header>
+
+<main id="main" class="wrap">
+<!-- A. Overview -->
+<section id="overview" style="border-top:0">
+ <div class="hero">
+  <div>
+   <span class="tag sim">Educational prototype · simulated data</span>
+   <h1 style="margin-top:14px">Smarter Machines. Safer Missions.</h1>
+   <p class="muted" style="font-size:1.1rem;max-width:56ch">RoboRescue helps you explore how robots can support human rescue teams after earthquakes, floods, fires and collapses. Compare robot types, plan a hypothetical mission and run a simulation.</p>
+   <div class="cta"><a class="btn pri" href="#planner">Plan a Mission</a><a class="btn" href="#robots">Explore Robots</a></div>
+  </div>
+  <div class="card" aria-labelledby="featT">
+   <span class="tag sim">Featured demo mission</span>
+   <h3 id="featT" style="margin-top:10px">Collapsed apartment block, urban earthquake</h3>
+   <p class="muted">A tracked search robot inspects voids and rubble while a remote inspection robot checks a narrow stairwell. Human responders stay outside the unstable zone and make every decision.</p>
+   <button class="btn sm" id="loadFeatured">Load into planner</button>
+  </div>
+ </div>
+ <div class="grid g3" role="group" aria-label="Simulated dashboard statistics">
+  <div class="card"><div class="stat" id="stTotal">0</div><div>Total demo missions (simulated)</div></div>
+  <div class="card"><div class="stat" id="stPlan">0</div><div>Missions in planning (yours, saved)</div></div>
+  <div class="card"><div class="stat" id="stRobots">4</div><div>Robot profiles (fictional)</div></div>
+ </div>
+ <div class="grid g2" style="margin-top:16px">
+  <div class="card"><h3>Mission readiness <span class="tag sim">simulated</span></h3>
+   <div class="meter" role="progressbar" aria-label="Mission readiness" aria-valuemin="0" aria-valuemax="100" id="readyBar"><i id="readyFill"></i></div>
+   <p class="muted" id="readyTxt" style="margin-top:8px"></p></div>
+  <div class="card"><h3>Recent activity</h3><ul class="log" id="activity" aria-live="polite"></ul></div>
+ </div>
+ <p class="note" style="margin-top:16px"><strong>All numbers on this page are simulated demonstration data.</strong> RoboRescue does not show real emergencies or real-time rescue operations.</p>
+</section>
+
+<!-- B. Robots -->
+<section id="robots">
+ <h2>Rescue robot explorer</h2>
+ <p class="muted">Four fictional profiles. Specifications are illustrative, not verified real-world performance.</p>
+ <div class="grid g2" style="margin-bottom:16px;align-items:end">
+  <div><label for="rSearch">Search robots</label><input id="rSearch" type="search" placeholder="e.g. flood, drone, rubble"></div>
+  <div><label for="rCat">Category</label><select id="rCat"><option value="">All categories</option></select></div>
+ </div>
+ <div class="grid g2" id="robotGrid"></div>
+ <p id="robotEmpty" class="muted" hidden>No robots match that search. Clear the filters to see all four profiles. <button class="btn sm" id="clearF">Clear filters</button></p>
+</section>
+
+<!-- C. Planner -->
+<section id="planner">
+ <h2>Mission planner</h2>
+ <p class="muted">Recommendations come from simple, transparent rules in this page's JavaScript. They are not AI output and have not been verified by emergency professionals.</p>
+ <div class="grid g2" style="align-items:start">
+  <form class="card" id="planForm" novalidate>
+   <h3 id="formTitle">New hypothetical mission</h3>
+   <div class="row"><div><label for="fName">Mission name (optional)</label><input id="fName" maxlength="60"></div>
+    <div><label for="fRobot">Preferred robot (optional)</label><select id="fRobot"><option value="">No preference</option></select></div></div>
+   <div class="row">
+    <div><label for="fDis">Disaster type *</label><select id="fDis" required><option value="">Choose…</option><option value="earthquake">Earthquake</option><option value="flood">Flood</option><option value="wildfire">Wildfire</option><option value="collapse">Building collapse</option><option value="industrial">Industrial incident</option></select><div class="err" id="eDis"></div></div>
+    <div><label for="fEnv">Environment *</label><select id="fEnv" required><option value="">Choose…</option><option value="urban">Urban</option><option value="rural">Rural</option><option value="indoor">Indoor</option><option value="coastal">Coastal</option><option value="mountainous">Mountainous</option></select><div class="err" id="eEnv"></div></div>
+    <div><label for="fObj">Mission objective *</label><select id="fObj" required><option value="">Choose…</option><option value="locate">Locate people</option><option value="inspect">Inspect an area</option><option value="map">Map terrain</option><option value="hazards">Assess hazards</option></select><div class="err" id="eObj"></div></div>
+    <div><label for="fPri">Mission priority *</label><select id="fPri" required><option value="">Choose…</option><option value="speed">Speed</option><option value="access">Accessibility</option><option value="detail">Detailed inspection</option></select><div class="err" id="ePri"></div></div>
+   </div>
+   <label for="fNotes">Additional notes (optional)</label><textarea id="fNotes" rows="3" maxlength="400"></textarea>
+   <div class="actions" style="margin-top:14px"><button class="btn pri" type="submit">Generate plan</button><button class="btn" type="button" id="formReset">Clear form</button></div>
+  </form>
+  <div class="card" id="summary" aria-live="polite"><h3>Mission summary</h3><p class="muted">Complete the required fields and choose Generate plan. Your summary will appear here.</p></div>
+ </div>
+ <h3 style="margin-top:32px">Saved missions</h3>
+ <div class="card" id="saved"></div>
+</section>
+
+<!-- D. Simulation -->
+<section id="simulation">
+ <h2>Mission simulation <span class="tag sim">simulated · no real robot</span></h2>
+ <p class="muted">Runs a scripted sequence in your browser. No hardware is controlled and no real people are located.</p>
+ <div class="grid g2" style="align-items:start">
+  <div class="card">
+   <label for="simSel">Mission to simulate</label><select id="simSel"></select>
+   <p style="margin-top:14px">Status: <strong id="simStatus">Idle</strong></p>
+   <div class="meter" role="progressbar" aria-label="Simulation progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="simBar"><i id="simFill"></i></div>
+   <ol id="simObjs" style="padding-left:1.2em"></ol>
+   <div class="actions"><button class="btn pri" id="simStart">Start simulation</button><button class="btn" id="simPause" disabled>Pause</button><button class="btn" id="simReset">Reset</button></div>
+  </div>
+  <div class="card"><h3>Activity log</h3><ul class="log" id="simLog" aria-live="polite"><li class="muted">No simulated events yet.</li></ul><div id="simDone"></div></div>
+ </div>
+</section>
+
+<!-- E. Safety -->
+<section id="safety">
+ <h2>Risk and safety center</h2>
+ <p class="muted">Robots can reduce exposure, but they never replace trained responders or official emergency procedures. Follow instructions from local emergency authorities.</p>
+ <div class="grid g2" id="riskGrid"></div>
+</section>
+
+<!-- F. Learn -->
+<section id="learn">
+ <h2>Robotics learning</h2>
+ <div class="grid g3" id="learnGrid"></div>
+</section>
+
+<!-- G. About -->
+<section id="about">
+ <h2>About and transparency</h2>
+ <div class="grid g2">
+  <div class="card"><p>RoboRescue is an <strong>educational planning prototype</strong>. Its dashboard values, robot profiles, availability and mission simulations are demonstrations only.</p>
+   <p class="muted">Saved missions live only in this browser's localStorage. Nothing is sent anywhere.</p>
+   <button class="btn dng" id="resetAll">Reset demonstration data</button></div>
+  <div class="card" style="border-color:var(--warn)"><h3>Disclaimer</h3><p>RoboRescue is not an emergency dispatch service, gives no professional rescue advice and controls no real hardware. In an emergency, contact your local emergency number.</p></div>
+ </div>
+</section>
+</main>
+<footer><div class="wrap">RoboRescue · Educational prototype with simulated data · Not for operational use.</div></footer>
+
+<div id="toast" role="status" aria-live="polite"></div>
+<dialog id="dlg"><form method="dialog"><p id="dlgTxt"></p><div class="actions"><button class="btn" value="no">Cancel</button><button class="btn dng" value="yes" id="dlgYes">Confirm</button></div></form></dialog>
+
+<script>
+"use strict";
+/* ===== Data ===== */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const LABEL={earthquake:"Earthquake",flood:"Flood",wildfire:"Wildfire",collapse:"Building collapse",industrial:"Industrial incident",urban:"Urban",rural:"Rural",indoor:"Indoor",coastal:"Coastal",mountainous:"Mountainous",locate:"Locate people",inspect:"Inspect an area",map:"Map terrain",hazards:"Assess hazards",speed:"Speed",access:"Accessibility",detail:"Detailed inspection"};
+const ROBOTS=[
+ {id:"t",name:"Tracked Search Robot",cat:"Ground, tracked",use:"Navigating rough terrain and inspecting collapsed structures.",str:["Climbs rubble and uneven ground","Carries camera and thermal sensor payloads","Can stay in place while humans wait at a safe distance"],lim:["Cannot pass narrow or vertical gaps","Slow compared with aerial options","Can get stuck or tip on unstable debris"],scn:"Inspecting voids under a collapsed floor slab before rescuers decide where to shore.",spec:"Illustrative: ~2 h battery, ~40 kg"},
+ {id:"a",name:"Aerial Scout Drone",cat:"Aerial",use:"Overhead visual assessment in suitable conditions.",str:["Fast wide-area view","Good for mapping and route checks","Reaches areas that are blocked on the ground"],lim:["Wind, rain, smoke and heat can ground it","Short flight time","Cannot enter most indoor or tight spaces"],scn:"Mapping a flooded valley road network to find which routes remain open.",spec:"Illustrative: ~30 min flight, ~2 km link"},
+ {id:"f",name:"Flood Inspection Rover",cat:"Ground, amphibious",use:"Inspecting flood-affected areas within its stated depth and current limits.",str:["Works in shallow standing water","Sealed body protects sensors","Can check road and embankment condition"],lim:["Unsafe in fast or deep water","Hidden debris and currents may trap it","Not suited to dry rubble"],scn:"Checking a flooded underpass for obstacles before crews approach.",spec:"Illustrative: <0.5 m water depth, ~1.5 h battery"},
+ {id:"r",name:"Remote Inspection Robot",cat:"Ground, compact",use:"Entering certain hazardous spaces ahead of human responders.",str:["Small enough for tight spaces","Tethered option reduces comms loss","Can sample air quality and visibility"],lim:["Short range and limited payload","Tether can snag","Sensor readings need expert interpretation"],scn:"Checking an industrial stairwell for smoke or gas readings before entry decisions.",spec:"Illustrative: ~1 h battery, ~15 kg"}];
+const RISKS=[
+ ["Unstable structures","Secondary collapse can injure responders.","Cameras and cracks-and-tilt checks from a distance.","Cannot judge hidden structural failure.","Structural engineers and rescue teams decide when and how to approach."],
+ ["Water and electrical hazards","Live power and moving water are lethal.","Visual checks of water levels and downed lines from afar.","Cannot confirm power is off or water is safe.","Utility crews and swift-water specialists must make areas safe."],
+ ["Smoke, heat and poor visibility","Reduces sight and can harm people quickly.","Thermal and air-quality sensors give early readings.","Sensors can saturate, fog or fail.","Fire services set the response and decide entry."],
+ ["Communication loss","A silent robot gives no information and may be lost.","Tethers or relays can extend range.","Concrete and rubble block signals unpredictably.","Humans keep control plans and fallback procedures."],
+ ["Battery limitations","Short runtime limits coverage.","Telemetry shows remaining power.","Cold, heavy loads and rough terrain cut runtime.","Teams plan swaps and return points in advance."],
+ ["Navigation uncertainty","Maps and GPS can be wrong in debris or indoors.","Lidar and cameras build local maps.","Dust, water and reflective surfaces confuse sensors.","Operators verify position and interpret ambiguous data."]];
+const LEARN=[
+ ["How tracked robots work","Continuous tracks spread weight over a larger area, helping a robot grip loose rubble and climb obstacles. Operators usually drive them remotely using camera video."],
+ ["How aerial drones help","Drones give a quick overhead view of damage and access routes. They depend on weather, battery and line of sight, so they supplement rather than replace ground checks."],
+ ["Remote sensing and mapping","Cameras, thermal imagers and lidar collect measurements that software turns into maps. Maps are estimates and need human review."],
+ ["Human-robot collaboration","Robots gather information; people judge priorities, ethics and risk. The best results come from clear roles and trained teams."],
+ ["Limits in real emergencies","Robots can fail, lose signal or misread scenes. They cannot make rescue decisions, and many disasters exceed what current machines handle."]];
+const KEY="roborescue.v1";
+const S={robot:"",draft:null,editId:null,missions:[],activity:[],simTimer:null,simStep:0,simPlan:null,simSeq:0};
+
+/* ===== Storage (fails safe) ===== */
+function load(){try{const d=JSON.parse(localStorage.getItem(KEY));if(d&&Array.isArray(d.missions)){S.missions=d.missions.filter(m=>m&&m.id&&LABEL[m.disaster]&&LABEL[m.env]&&LABEL[m.objective]&&LABEL[m.priority]);S.activity=Array.isArray(d.activity)?d.activity.slice(0,6).map(String):[]}}catch(e){S.missions=[];S.activity=[]}}
+function persist(){try{localStorage.setItem(KEY,JSON.stringify({missions:S.missions,activity:S.activity}))}catch(e){toast("Browser storage is unavailable. Changes will be lost when you close this page.","warn")}}
+function toast(msg,type="info"){const t=document.createElement("div");t.className="toast "+type;t.textContent=msg;$("#toast").append(t);setTimeout(()=>t.remove(),4500)}
+function confirmDlg(txt,yes){$("#dlgTxt").textContent=txt;const d=$("#dlg");d.returnValue="";d.onclose=()=>{if(d.returnValue==="yes")yes()};d.showModal()}
+function note(msg){S.activity.unshift(new Date().toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})+" — "+msg);S.activity=S.activity.slice(0,6);persist();renderDash()}
+
+/* ===== Robot SVGs (original illustrations) ===== */
+function svg(id){const c='stroke="#4fd1e8" stroke-width="2" fill="#141f36"',o='fill="#ff7a1a"';
+ const g={t:`<rect x="50" y="62" width="100" height="26" rx="13" ${c}/><rect x="70" y="42" width="52" height="22" rx="4" ${c}/><circle cx="112" cy="52" r="6" ${o}/><path d="M122 48l24-12" stroke="#4fd1e8" stroke-width="3"/>`,
+ a:`<ellipse cx="100" cy="64" rx="22" ry="10" ${c}/><path d="M78 64L50 44M122 64l28-20M78 64L50 84M122 64l28 20" stroke="#4fd1e8" stroke-width="3"/><ellipse cx="50" cy="42" rx="18" ry="4" ${c}/><ellipse cx="150" cy="42" rx="18" ry="4" ${c}/><ellipse cx="50" cy="86" rx="18" ry="4" ${c}/><ellipse cx="150" cy="86" rx="18" ry="4" ${c}/><circle cx="100" cy="72" r="5" ${o}/>`,
+ f:`<path d="M52 66h96l-10 20H62z" ${c}/><rect x="80" y="46" width="40" height="20" rx="4" ${c}/><circle cx="100" cy="56" r="5" ${o}/><path d="M30 96q10-8 20 0t20 0 20 0 20 0 20 0 20 0 20 0" fill="none" stroke="#4fd1e8" stroke-width="2"/>`,
+ r:`<rect x="64" y="58" width="60" height="26" rx="8" ${c}/><circle cx="76" cy="88" r="7" ${c}/><circle cx="112" cy="88" r="7" ${c}/><circle cx="124" cy="68" r="6" ${o}/><path d="M64 70H20M20 70l-4-8" fill="none" stroke="#4fd1e8" stroke-width="2" stroke-dasharray="4 3"/>`};
+ return `<svg viewBox="0 0 200 120" role="img" aria-label="Stylised illustration of the ${esc(ROBOTS.find(r=>r.id===id).name)}">${g[id]}</svg>`}
+
+/* ===== Robots ===== */
+function renderRobots(){const q=$("#rSearch").value.trim().toLowerCase(),cat=$("#rCat").value;
+ const list=ROBOTS.filter(r=>(!cat||r.cat===cat)&&(!q||[r.name,r.cat,r.use,r.scn,...r.str,...r.lim].join(" ").toLowerCase().includes(q)));
+ $("#robotGrid").innerHTML=list.map(r=>`<article class="card robot ${S.robot===r.id?"sel":""}">${svg(r.id)}<span class="tag">${r.cat}</span> <span class="tag sim">Fictional profile</span><h3 style="margin-top:10px">${r.name}</h3><p>${r.use}</p>
+ <h4>Strengths</h4><ul class="clean">${r.str.map(x=>`<li>${x}</li>`).join("")}</ul><h4>Limitations</h4><ul class="clean">${r.lim.map(x=>`<li>${x}</li>`).join("")}</ul>
+ <h4>Example deployment</h4><p>${r.scn}</p><p class="muted" style="font-size:.85rem">${r.spec} (illustrative only)</p>
+ <button class="btn ${S.robot===r.id?"":"pri"}" data-pick="${r.id}" aria-pressed="${S.robot===r.id}">${S.robot===r.id?"Selected — change in planner":"Select for mission"}</button></article>`).join("");
+ $("#robotEmpty").hidden=list.length>0}
+function pickRobot(id){S.robot=id;$("#fRobot").value=id;renderRobots();toast(ROBOTS.find(r=>r.id===id).name+" selected for your next mission.","success");$("#planner").scrollIntoView()}
+
+/* ===== Rule-based recommendation (transparent scoring) ===== */
+function recommend(m){const s={t:0,a:0,f:0,r:0},why=[];
+ const add=(k,n,t)=>{s[k]+=n;if(t)why.push(t)};
+ const E={urban:()=>{add("t",2);add("a",1)},rural:()=>{add("a",2,"Open rural terrain suits aerial coverage.");add("t",1);add("f",1)},indoor:()=>{add("r",3,"Indoor spaces favour a compact robot.");add("t",1);add("a",-9)},coastal:()=>{add("f",2,"Coastal areas may include shallow water.");add("a",1)},mountainous:()=>{add("a",2,"Steep ground is easier to survey from above.");add("t",2)}};
+ const D={earthquake:()=>{add("t",1);add("r",1);add("a",1)},flood:()=>add("f",3,"Flood scenarios match a water-capable rover."),wildfire:()=>add("a",2,"Aerial views keep equipment away from flames, if smoke and wind allow."),collapse:()=>{add("t",2,"Rubble favours tracked mobility.");add("r",2)},industrial:()=>add("r",3,"Confined industrial spaces suit remote inspection.")};
+ const O={locate:()=>{add("t",1);add("r",1);add("a",1)},inspect:()=>{add("a",1);add("f",1)},map:()=>add("a",3,"Mapping benefits from an overhead vantage point."),hazards:()=>{add("r",2,"Hazard assessment benefits from sending a robot first.");add("t",1)}};
+ const P={speed:()=>add("a",2,"Speed priority favours fast aerial coverage."),access:()=>{add("r",2);add("t",1)},detail:()=>{add("t",1);add("r",2,"Detailed inspection favours close-up ground sensing.")}};
+ E[m.env]();D[m.disaster]();O[m.objective]();P[m.priority]();
+ if(m.disaster!=="flood"&&m.env!=="coastal")s.f-=3;
+ const best=Object.keys(s).sort((a,b)=>s[b]-s[a])[0];
+ return {robot:ROBOTS.find(r=>r.id===best),why:why.filter((w,i)=>i<3)}}
+
+/* ===== Plan content ===== */
+const HAZ={earthquake:["Aftershocks and unstable structures","Gas or utility damage"],flood:["Fast or deep water and hidden debris","Electrical hazards near water"],wildfire:["Smoke and heat reducing visibility","Shifting wind and fire spread"],collapse:["Secondary collapse","Dust, voids and confined spaces"],industrial:["Unknown chemical or gas release","Fire, heat and damaged equipment"]};
+const OBJ={locate:["Search for possible signs of people (heat, sound, movement) and report them to rescuers","Mark and report candidate areas with uncertainty noted"],inspect:["Capture video of the area for responders","Note blocked routes and visible damage"],map:["Build an approximate map of terrain and routes","Highlight areas that need ground verification"],hazards:["Record visible and measurable hazards","Flag zones responders should avoid"]};
+function buildPlan(m){const rec=recommend(m),pref=S.robot||m.robot;
+ const mismatch=pref&&pref!==rec.robot.id?ROBOTS.find(r=>r.id===pref):null;
+ return {rec,mismatch,haz:[...HAZ[m.disaster],"Communication loss and limited battery"],obj:OBJ[m.objective],
+ lim:[...rec.robot.lim,"Rule-based suggestions cannot account for real site conditions"],
+ over:["A qualified human team lead approves and supervises every deployment","Keep people out of unstable zones; robots do not replace rescuers","Use official emergency channels and procedures; set return and abort conditions in advance"]}}
+function summaryHTML(m,p){const li=a=>`<ul class="clean">${a.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`;
+ return `<h3>Mission summary <span class="tag sim">rule-based demo</span></h3><p><strong>${esc(m.name)}</strong></p>
+ <p class="muted">${LABEL[m.disaster]} · ${LABEL[m.env]} · ${LABEL[m.objective]} · Priority: ${LABEL[m.priority]}</p>
+ <h4>Suggested robot category</h4><p><strong>${p.rec.robot.name}</strong> (${p.rec.robot.cat})</p>
+ ${p.mismatch?`<p class="note">You prefer the ${p.mismatch.name}. The rules rank it lower for this scenario; review its limitations before choosing it.</p>`:""}
+ <h4>Why it may fit</h4>${li(p.rec.why.length?p.rec.why:[p.rec.robot.use])}<h4>Main objectives</h4>${li(p.obj)}<h4>Potential hazards</h4>${li(p.haz)}
+ <h4>Limitations and uncertainties</h4>${li(p.lim)}<h4>Human oversight and precautions</h4>${li(p.over)}
+ ${m.notes?`<h4>Your notes</h4><p>${esc(m.notes)}</p>`:""}
+ <div class="actions"><button class="btn pri" id="saveBtn">${S.editId?"Save changes":"Save mission"}</button><a class="btn" href="#simulation" id="toSim">Simulate this plan</a></div>`}
+
+/* ===== Planner form ===== */
+const REQ=[["fDis","eDis","a disaster type"],["fEnv","eEnv","an environment"],["fObj","eObj","a mission objective"],["fPri","ePri","a mission priority"]];
+function readForm(){const v=id=>$("#"+id).value.trim();return {disaster:v("fDis"),env:v("fEnv"),objective:v("fObj"),priority:v("fPri"),name:v("fName"),notes:v("fNotes"),robot:v("fRobot")}}
+function validate(){let ok=true;REQ.forEach(([f,e,t])=>{const bad=!$("#"+f).value;$("#"+f).setAttribute("aria-invalid",bad);$("#"+e).textContent=bad?"Choose "+t+".":"";if(bad&&ok){$("#"+f).focus()}ok=ok&&!bad});return ok}
+function submitPlan(ev){ev.preventDefault();if(!validate()){toast("Some required fields are missing. Fix the highlighted fields and try again.","error");return}
+ const m=readForm();m.name=m.name||`${LABEL[m.disaster]} — ${LABEL[m.objective].toLowerCase()}`;m.id=S.editId||"m"+Date.now();S.robot=m.robot;S.draft=m;
+ $("#summary").innerHTML=summaryHTML(m,buildPlan(m));toast("Plan generated. Review it, then save.","success");$("#summary").scrollIntoView({block:"nearest"});fillSim()}
+function clearForm(){$("#planForm").reset();S.editId=null;S.draft=null;S.robot="";$("#formTitle").textContent="New hypothetical mission";REQ.forEach(([f,e])=>{$("#"+f).removeAttribute("aria-invalid");$("#"+e).textContent=""});$("#summary").innerHTML='<h3>Mission summary</h3><p class="muted">Complete the required fields and choose Generate plan. Your summary will appear here.</p>';renderRobots();fillSim()}
+function setForm(m){$("#fDis").value=m.disaster;$("#fEnv").value=m.env;$("#fObj").value=m.objective;$("#fPri").value=m.priority;$("#fName").value=m.name||"";$("#fNotes").value=m.notes||"";$("#fRobot").value=m.robot||"";S.robot=m.robot||"";renderRobots()}
+
+/* ===== Saved missions ===== */
+function renderSaved(){const el=$("#saved");
+ if(!S.missions.length){el.innerHTML='<p class="muted">No saved missions yet. Generate a plan above and choose Save mission.</p>';return}
+ el.innerHTML=S.missions.map(m=>`<div class="mrow"><div><strong>${esc(m.name)}</strong><div class="muted" style="font-size:.88rem">${LABEL[m.disaster]} · ${LABEL[m.env]} · ${LABEL[m.objective]}</div></div><div class="actions"><button class="btn sm" data-sim="${m.id}">Simulate</button><button class="btn sm" data-edit="${m.id}">Edit</button><button class="btn sm dng" data-del="${m.id}">Delete</button></div></div>`).join("")}
+function saveMission(){const m=S.draft;if(!m)return;const i=S.missions.findIndex(x=>x.id===m.id);
+ if(i>=0)S.missions[i]=m;else S.missions.push(m);const edit=i>=0;S.editId=null;S.draft=null;persist();note((edit?"Updated ":"Saved ")+'mission "'+m.name+'"');
+ toast(edit?"Mission updated.":"Mission saved.","success");$("#formTitle").textContent="New hypothetical mission";$("#planForm").reset();S.robot="";renderAll();$("#summary").innerHTML='<h3>Mission summary</h3><p class="muted">Saved. Choose Edit on a saved mission to change it, or plan another.</p>'}
+function editMission(id){const m=S.missions.find(x=>x.id===id);if(!m)return;S.editId=id;setForm(m);$("#formTitle").textContent="Editing: "+m.name;toast("Mission loaded. Change fields and generate the plan again.","warn");$("#planner").scrollIntoView();$("#fName").focus()}
+function deleteMission(id){const m=S.missions.find(x=>x.id===id);if(!m)return;confirmDlg('Delete "'+m.name+'"? This cannot be undone.',()=>{S.missions=S.missions.filter(x=>x.id!==id);if(S.editId===id)clearForm();persist();note('Deleted mission "'+m.name+'"');toast("Mission deleted.","success");renderAll()})}
+const FEATURED={name:"Featured: collapsed apartment block",disaster:"earthquake",env:"urban",objective:"locate",priority:"detail",notes:"Demo scenario from the overview.",robot:""};
+
+/* ===== Simulation ===== */
+function fillSim(){const sel=$("#simSel"),cur=sel.value;const opts=[];if(S.draft)opts.push(`<option value="draft">Current draft: ${esc(S.draft.name)}</option>`);
+ S.missions.forEach(m=>opts.push(`<option value="${m.id}">${esc(m.name)}</option>`));
+ sel.innerHTML=opts.length?opts.join(""):'<option value="">No mission available — plan one first</option>';if([...sel.options].some(o=>o.value===cur))sel.value=cur;$("#simStart").disabled=!opts.length}
+function simMission(){const v=$("#simSel").value;return v==="draft"?S.draft:S.missions.find(m=>m.id===v)}
+function simSteps(m){const r=buildPlan(m).rec.robot.name;return [
+ ["Pre-mission safety check",`Simulated check complete: team lead briefed, abort conditions set for ${LABEL[m.disaster].toLowerCase()} scenario.`],
+ ["Deploy robot",`Simulated ${r} enters the ${LABEL[m.env].toLowerCase()} area.`],
+ ["Carry out objective: "+LABEL[m.objective].toLowerCase(),"Simulated sensors return partial data; some areas remain uncertain."],
+ ["Report to human team","Simulated findings sent to the team lead for review. No decisions are automated."],
+ ["Return and debrief","Simulated robot returns; battery and communication issues logged."]]}
+function simLog(t){const l=$("#simLog");if(l.querySelector(".muted"))l.innerHTML="";const li=document.createElement("li");li.innerHTML=`<time>${new Date().toLocaleTimeString()}</time>`;li.append(t);l.prepend(li)}
+function drawSim(p,status){$("#simStatus").textContent=status;$("#simFill").style.width=p+"%";$("#simBar").setAttribute("aria-valuenow",Math.round(p));
+ if(S.simPlan)$("#simObjs").innerHTML=S.simPlan.map((s,i)=>`<li ${i<S.simStep?'style="color:var(--ok)"':i===S.simStep&&S.simTimer?'style="color:var(--or2)"':'class="muted"'}>${i<S.simStep?"Done: ":""}${esc(s[0])}</li>`).join("")}
+function simStart(){const m=simMission();if(!m){toast("Choose or plan a mission before starting the simulation.","error");return}
+ if(!S.simPlan||S.simStep>=S.simPlan.length||S.simStep===0){S.simPlan=simSteps(m);S.simStep=0;$("#simLog").innerHTML="";$("#simDone").innerHTML="";simLog("Simulation started (no real robot is involved).")}
+ $("#simStart").disabled=true;$("#simPause").disabled=false;$("#simSel").disabled=true;drawSim(S.simStep/S.simPlan.length*100,"Running (simulated)");
+ S.simTimer=setInterval(simTick,1600)}
+function simTick(){const s=S.simPlan[S.simStep];simLog(s[1]);S.simStep++;const p=S.simStep/S.simPlan.length*100;
+ if(S.simStep>=S.simPlan.length){clearInterval(S.simTimer);S.simTimer=null;drawSim(100,"Simulation complete");$("#simPause").disabled=true;$("#simStart").disabled=false;$("#simStart").textContent="Run again";$("#simSel").disabled=false;
+  $("#simDone").innerHTML='<p class="note" style="margin-top:12px"><strong>Final summary (simulated):</strong> All five scripted steps finished. This was a demonstration only; it does not represent any real operation, and no real-world emergency has been located or resolved.</p>';note("Finished a simulation");S.simStep=0}
+ else drawSim(p,"Running (simulated)")}
+function simPause(){if(S.simTimer){clearInterval(S.simTimer);S.simTimer=null;$("#simPause").textContent="Resume";drawSim(S.simStep/S.simPlan.length*100,"Paused")}
+ else{$("#simPause").textContent="Pause";S.simTimer=setInterval(simTick,1600);drawSim(S.simStep/S.simPlan.length*100,"Running (simulated)")}}
+function simReset(){clearInterval(S.simTimer);S.simTimer=null;S.simStep=0;S.simPlan=null;$("#simPause").textContent="Pause";$("#simPause").disabled=true;$("#simSel").disabled=false;$("#simStart").textContent="Start simulation";fillSim();
+ $("#simObjs").innerHTML="";$("#simLog").innerHTML='<li class="muted">No simulated events yet.</li>';$("#simDone").innerHTML="";drawSim(0,"Idle")}
+$("#simPause").addEventListener("click",simPause);
+
+/* ===== Dashboard ===== */
+function renderDash(){$("#stTotal").textContent=12+S.missions.length;$("#stPlan").textContent=S.missions.length;
+ const pct=Math.min(100,30+(S.robot?20:0)+Math.min(S.missions.length,2)*15+(S.activity.some(a=>a.includes("simulation"))?20:0));
+ $("#readyFill").style.width=pct+"%";$("#readyBar").setAttribute("aria-valuenow",pct);
+ $("#readyTxt").textContent=pct+"% — simulated score from demo steps completed (robot chosen, missions saved, simulation run).";
+ $("#activity").innerHTML=S.activity.length?S.activity.map(a=>`<li>${esc(a)}</li>`).join(""):'<li class="muted">No activity yet. Plan a mission to get started.</li>'}
+function renderAll(){renderDash();renderRobots();renderSaved();fillSim()}
+
+/* ===== Static content ===== */
+$("#riskGrid").innerHTML=RISKS.map(r=>`<article class="card"><h3>${r[0]}</h3><p><strong>Why it matters:</strong> ${r[1]}</p><p><strong>What a robot may help inspect:</strong> ${r[2]}</p><p><strong>Remaining limits:</strong> ${r[3]}</p><p class="muted"><strong>Why humans are needed:</strong> ${r[4]}</p></article>`).join("");
+$("#learnGrid").innerHTML=LEARN.map(l=>`<article class="card"><h3>${l[0]}</h3><p class="muted">${l[1]}</p></article>`).join("");
+[...new Set(ROBOTS.map(r=>r.cat))].forEach(c=>$("#rCat").insertAdjacentHTML("beforeend",`<option>${c}</option>`));
+ROBOTS.forEach(r=>$("#fRobot").insertAdjacentHTML("beforeend",`<option value="${r.id}">${r.name}</option>`));
+
+/* ===== Events ===== */
+document.addEventListener("click",e=>{const b=e.target.closest("button,a");if(!b)return;
+ if(b.dataset.pick)pickRobot(b.dataset.pick);else if(b.dataset.edit)editMission(b.dataset.edit);else if(b.dataset.del)deleteMission(b.dataset.del);
+ else if(b.dataset.sim){fillSim();$("#simSel").value=b.dataset.sim;$("#simulation").scrollIntoView();toast("Mission selected. Press Start simulation.")}
+ else if(b.id==="saveBtn")saveMission();else if(b.id==="toSim"){$("#simSel").value="draft"}
+ if(b.closest("nav")){$("#nav").classList.remove("open");$("#menuBtn").setAttribute("aria-expanded","false")}});
+$("#planForm").addEventListener("submit",submitPlan);$("#formReset").addEventListener("click",clearForm);
+$("#planForm").addEventListener("input",e=>{if(e.target.required&&e.target.value){e.target.removeAttribute("aria-invalid");$("#e"+e.target.id.slice(1)).textContent=""}});
+$("#fRobot").addEventListener("change",e=>{S.robot=e.target.value;renderRobots();renderDash()});
+$("#rSearch").addEventListener("input",renderRobots);$("#rCat").addEventListener("change",renderRobots);
+$("#clearF").addEventListener("click",()=>{$("#rSearch").value="";$("#rCat").value="";renderRobots()});
+$("#menuBtn").addEventListener("click",()=>{const o=$("#nav").classList.toggle("open");$("#menuBtn").setAttribute("aria-expanded",o)});
+$("#loadFeatured").addEventListener("click",()=>{clearForm();setForm(FEATURED);toast("Featured scenario loaded. Choose Generate plan.","success");$("#planner").scrollIntoView()});
+$("#simStart").addEventListener("click",simStart);$("#simReset").addEventListener("click",simReset);
+$("#resetAll").addEventListener("click",()=>confirmDlg("Reset all demonstration data? Saved missions and activity will be removed.",()=>{simReset();S.missions=[];S.activity=[];try{localStorage.removeItem(KEY)}catch(e){}clearForm();renderAll();toast("Demonstration data reset.","success")}));
+/* highlight current section in nav */
+const links=[...document.querySelectorAll("nav a")];
+const io=new IntersectionObserver(es=>es.forEach(en=>{if(en.isIntersecting)links.forEach(a=>a.classList.toggle("on",a.getAttribute("href")==="#"+en.target.id))}),{rootMargin:"-40% 0px -55% 0px"});
+document.querySelectorAll("main section").forEach(s=>io.observe(s));
+load();renderAll();drawSim(0,"Idle");
+</script>
+</body>
+</html>
